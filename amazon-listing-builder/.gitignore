@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Excel temporary files
+~$*.xlsx
+~$*.xlsm
+~$*.xls
+
+# Generated output files
+# 保留目录，但默认不提交具体业务输出文件
+# data/output/**/*.xlsx
+# data/output/**/*.xlsm
+
+# OS
+.DS_Store
+Thumbs.db
