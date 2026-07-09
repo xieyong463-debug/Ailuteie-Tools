@@ -42,7 +42,43 @@ data/output/{product_id}/
 不要覆盖已有文件。
 ```
 
-## Step 2：生成 selling_points_research.xlsx
+## Step 2：分析上传模板样本
+
+用户已提供三份 Amazon 上传模板样本：
+
+| 样本货号 | 产品方向 | item_type_keyword | 模板文件名 |
+|---|---|---|---|
+| YK-117 | 阅读用靠垫枕 / Reading Pillow | reading-pillows | reading_pillows_template_yk117.xlsm |
+| CTZ-039 | 身体枕 / Body Pillow | body-pillows | body_pillows_template_ctz039.xlsm |
+| YK-132 | 腰椎枕 / Lumbar Pillow | lumbar-pillows | lumbar_pillows_template_yk132.xlsm |
+
+核心规则：
+
+```text
+模板中第 7 行 Parent 和第 8 行 Child 已填写字段，后续视为该 item_type_keyword 类目的必填字段样本。
+```
+
+命令：
+
+```bash
+python -m src.cli analyze-upload-templates
+```
+
+输出：
+
+```text
+data/input/amazon_templates/template_required_fields.json
+```
+
+已分析统计：
+
+| item_type_keyword | 已填写字段并集 | Parent 已填写字段 | Child 已填写字段 |
+|---|---:|---:|---:|
+| reading-pillows | 70 | 43 | 70 |
+| body-pillows | 68 | 41 | 68 |
+| lumbar-pillows | 68 | 40 | 68 |
+
+## Step 3：生成 selling_points_research.xlsx
 
 输入：
 
@@ -82,13 +118,14 @@ competitor_reference
 - 医疗、治疗、疼痛缓解等表达直接标记 no。
 - 不要照抄竞品 Listing 文案。
 
-## Step 3：生成 approved_product_info.xlsx 初稿
+## Step 4：生成 approved_product_info.xlsx 初稿
 
 输入：
 
 ```text
 product_master.xlsx
 selling_points_research.xlsx
+template_required_fields.json
 产品图片识别结果
 seller_notes
 竞品参考结果
@@ -118,19 +155,34 @@ review_status = approved
 只有 approved 的 SKU 才允许进入 Listing 生成。
 ```
 
-## Step 4：生成 listing_review.xlsx
+## Step 5：生成 listing_review.xlsx
 
 输入：
 
 ```text
 data/review/{product_id}/approved_product_info.xlsx
 data/input/category_keywords/back_pillow.xlsx 或 body_pillow_keywords.xlsx
+data/input/amazon_templates/template_required_fields.json
 ```
 
 输出：
 
 ```text
 data/output/{product_id}/listing_review.xlsx
+```
+
+现在 `listing_review.xlsx` 不只是文案审核表，而是：
+
+```text
+Listing 文案审核 + Amazon 必填字段审核
+```
+
+建议 Sheet：
+
+```text
+listing_content
+amazon_required_fields
+missing_fields_check
 ```
 
 初始状态：
@@ -145,7 +197,7 @@ review_status = need_review
 review_status = approved
 ```
 
-Listing 字段：
+Listing 文案字段：
 
 ```text
 item_name_75
@@ -172,7 +224,7 @@ item_highlight_125 <= 125 characters
 - keyword_notes：中文为主，英文关键词保留
 - manual_notes：中文
 
-## Step 5：Amazon 上传模板填充，暂缓
+## Step 6：Amazon 上传模板填充，暂缓
 
 暂缓模块：
 
@@ -183,13 +235,14 @@ generate_amazon_upload_file
 原因：
 
 ```text
-BODY_POSITIONER 上传模板还没有最终整理完成。
+最终填模板模块后期再做。
+但当前框架必须保证 listing_review.xlsx 的字段能匹配 Amazon 上传模板。
 ```
 
 后期恢复时的输入：
 
 ```text
-data/input/amazon_templates/body_positioner_template.xlsm
+data/input/amazon_templates/body_positioner_template.xlsm 或三类目模板样本
 data/review/{product_id}/approved_product_info.xlsx
 data/output/{product_id}/listing_review.xlsx
 ```
@@ -207,6 +260,35 @@ data/output/{product_id}/amazon_upload_ready.xlsm
 只搬运已审核内容。
 不能在这一步重新生成标题、五点、卖点、材质或类目。
 字段缺失时只提醒，不乱填。
+```
+
+## Parent / Child 行规则
+
+`product_master.xlsx` 中：
+
+```text
+一行 = 一个 SKU / 一个 Child 变体
+```
+
+Amazon 上传模板需要：
+
+```text
+Parent 行 + Child 行
+```
+
+所以后续生成最终 Amazon 字段时必须自动处理：
+
+```text
+同一个 product_id 生成 1 行 Parent
+同一个 product_id 下每个 sku_name 生成 1 行 Child
+```
+
+例如：
+
+```text
+YK-048 有 10 个 SKU
+→ 1 行 Parent + 10 行 Child
+→ 合计 11 行
 ```
 
 ## 基础禁用规则
@@ -247,41 +329,3 @@ K列：月购买量
 ```
 
 B列翻译不作为核心依据。
-
-## 产品类型方向
-
-### body_pillow
-
-适合：
-
-```text
-Body Pillow
-Side Sleeper Pillow
-Long Bed Pillow
-Segmented Body Pillow
-```
-
-item_type_keyword：
-
-```text
-body-pillows
-```
-
-### back_pillow
-
-适合：
-
-```text
-Reading Pillow
-Bed Rest Pillow
-Backrest Pillow
-Triangle Back Pillow
-Lumbar Support Pillow
-```
-
-item_type_keyword：
-
-```text
-reading-pillows
-lumbar-pillows
-```
