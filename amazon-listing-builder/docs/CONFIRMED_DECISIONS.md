@@ -11,7 +11,7 @@ Codex 是辅助填表工具，不是自动上架工具。
 
 - 用户继续使用 Amazon 上传模板。
 - 用户继续人工审核。
-- Codex 负责读取资料、分析卖点、生成文案初稿、填表辅助。
+- Codex 负责读取资料、分析卖点、生成文案初稿、字段审核表和填表辅助。
 - 流程不能过度复杂。
 
 ## 2. 输出语言
@@ -68,7 +68,7 @@ size
 
 规则：
 
-- 一行 = 一个 SKU / 一个变体。
+- 一行 = 一个 SKU / 一个 Child 变体。
 - 同一个 product_id 可以有多行。
 - product_id 用来创建产品文件夹。
 - sku_name 用来识别具体 SKU。
@@ -102,29 +102,35 @@ data/input/category_keywords/body_pillow_keywords.xlsx
 | back_pillow | back_pillow.xlsx |
 | body_pillow | body_pillow_keywords.xlsx |
 
-## 5. Amazon 上传模板
+## 5. Amazon 上传模板样本
 
-路径：
+用户已提供三个类目上传模板样本：
 
-```text
-data/input/amazon_templates/body_positioner_template.xlsm
-```
+| 样本文件 | 样本货号 | 产品方向 | item_type_keyword | 后续建议文件名 |
+|---|---|---|---|---|
+| yk-117.xlsm | YK-117 | 阅读用靠垫枕 / Reading Pillow | reading-pillows | reading_pillows_template_yk117.xlsm |
+| ctz-039.xlsm | CTZ-039 | 身体枕 / Body Pillow | body-pillows | body_pillows_template_ctz039.xlsm |
+| yk-132..xlsm | YK-132 | 腰椎枕 / Lumbar Pillow | lumbar-pillows | lumbar_pillows_template_yk132.xlsm |
 
-已确认：
-
-- 三个类目共用 BODY_POSITIONER 上传模板。
-- 可用 item_type_keyword：
-  - body-pillows
-  - reading-pillows
-  - lumbar-pillows
-
-注意：
+核心规则：
 
 ```text
-把 listing_review.xlsx 填入 Amazon 上传模板这一步暂时不做。
+三个上传模板样本中，第7行 Parent 和第8行 Child 已填写字段，后续视为对应 item_type_keyword 类目的必填字段样本。
 ```
 
-原因：上传模板还没有最终整理完成，后期再在 Codex 里继续操作。
+已分析统计：
+
+| item_type_keyword | 已填写字段并集 | Parent 已填写字段 | Child 已填写字段 |
+|---|---:|---:|---:|
+| reading-pillows | 70 | 43 | 70 |
+| body-pillows | 68 | 41 | 68 |
+| lumbar-pillows | 68 | 40 | 68 |
+
+后续生成：
+
+```text
+data/input/amazon_templates/template_required_fields.json
+```
 
 ## 6. 产品图片
 
@@ -190,6 +196,7 @@ data/review/{product_id}/approved_product_info.xlsx
 - 初始 review_status = need_review。
 - 用户审核后手动改为 approved。
 - 只有 review_status = approved 的 SKU 才允许进入 Listing 生成。
+- 产品事实字段必须尽量覆盖上传模板必填字段样本里的非文案字段。
 
 ## 10. listing_review.xlsx
 
@@ -199,10 +206,26 @@ data/review/{product_id}/approved_product_info.xlsx
 data/output/{product_id}/listing_review.xlsx
 ```
 
+现在定位升级为：
+
+```text
+Listing 文案审核 + Amazon 必填字段审核
+```
+
+建议 Sheet：
+
+```text
+listing_content
+amazon_required_fields
+missing_fields_check
+```
+
 规则：
 
 - 由 Codex 根据 approved_product_info.xlsx 生成。
-- 每个 SKU 一行。
+- 必须同时考虑 Parent 行和 Child 行。
+- 同一个 product_id 生成 1 行 Parent。
+- 同一个 product_id 下每个 sku_name 生成 1 行 Child。
 - 初始 review_status = need_review。
 - 用户审核后手动改为 approved。
 - 最终上传内容字段用英文。
@@ -219,6 +242,6 @@ generate_amazon_upload_file
 原因：
 
 ```text
-BODY_POSITIONER 上传模板还没最终整理好。
-后期再把 listing_review.xlsx 填入 Amazon 上传模板。
+最终填入 Amazon 上传模板的模块后期再做。
+但当前框架必须保证 listing_review.xlsx 的字段能匹配 Amazon 上传模板。
 ```
